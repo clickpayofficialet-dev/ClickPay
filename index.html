@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickPay Wallet & Task Hub</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #07090e;
+            --card-bg: #0f172a;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --accent: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            padding-bottom: 95px;
+        }
+        header {
+            background: var(--card-bg);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        header h1 { font-size: 14px; color: var(--primary); font-weight: 800; }
+        .container { max-width: 600px; margin: 15px auto; padding: 0 12px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .section-title {
+            font-size: 13px;
+            margin-bottom: 12px;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .action-btn {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .action-btn:hover { background: var(--primary-hover); }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn.secondary { background: var(--accent); }
+        .action-btn.danger { background: var(--danger); }
+        .action-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+        .box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            background: #020617;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+        }
+        input[type="file"] { padding: 8px; background: #020617; cursor: pointer; }
+        
+        .inline-alert {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: #fca5a5;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-top: 10px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+        .inline-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--primary);
+            color: #6ee7b7;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-top: 10px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .rotating-banner {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--accent);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-bottom: 12px;
+            color: #93c5fd;
+            text-align: center;
+            line-height: 1.5;
+            min-height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .dashboard-grid.single-card {
+            grid-template-columns: 1fr;
+        }
+        .dash-box {
+            background: linear-gradient(135deg, #0f172a, #020617);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .dash-box h3 { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+        .dash-value { font-size: 15px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
+        
+        .master-card {
+            background: linear-gradient(135deg, #1e1b4b, #3b82f6, #059669);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 15px;
+            box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .card-brand { font-size: 14px; font-weight: 900; color: #ffffff; letter-spacing: 2px; }
+        .card-chip { width: 42px; height: 32px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 6px; box-shadow: inset 0 1px 2px rgba(255,255,255,0.4); }
+        .card-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .card-stat-item {
+            background: rgba(2, 6, 23, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .card-stat-label { font-size: 9px; color: #cbd5e1; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-stat-val { font-size: 12px; font-weight: bold; color: #ffffff; word-break: break-all; }
+        
+        .master-deposit-box {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 2px solid var(--accent);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 15px;
+        }
+        .step-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: flex-start;
+        }
+        .step-num {
+            background: var(--accent);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step-desc { font-size: 11px; line-height: 1.5; color: var(--text-light); }
+        
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin: 10px 0;
+        }
+        .star { font-size: 22px; cursor: pointer; color: #475569; transition: color 0.2s; }
+        .star.selected { color: #f59e0b; }
+        
+        .rules-modal {
+            background: linear-gradient(135deg, #0f172a, #020617);
+            border: 2px solid var(--accent);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .rules-modal h3 {
+            color: var(--accent);
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .rules-content {
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+        
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 4px;
+            z-index: 100;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.4);
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            transition: all 0.2s;
+            flex: 1;
+        }
+        .nav-item span:first-child { font-size: 20px; }
+        .nav-item.active {
+            color: var(--primary);
+            background: rgba(16, 185, 129, 0.1);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CLICKPAY WALLET HUB</h1>
+        <div id="globalRatingDisplay" style="font-size: 11px; color: var(--warning); font-weight: bold;">⭐ 4.9 (Rate Us)</div>
+    </header>
+    <div class="container">
+        
+        <!-- 0. MANDATORY CHANNEL & BOT GATEWAY MODAL SECTION -->
+        <div id="rules-section" class="section active">
+            <div class="rules-modal">
+                <h3>📜 Mandatory Gateway / የግዴታ ማስተላለፊያ</h3>
+                <div class="rules-content">
+                    <p><b>[Amharic / መመሪያ]</b><br>ከመመዝገብዎ በፊት ከታች ያሉትን ሊንኮች በመጫን <b>ኦፊሴላዊውን ቻናል ጆይን (Join)</b> እንዲሁም <b>ቦቱን ስታርት (Start)</b> ማድረግ ግዴታ ነው። እነዚህን ሳያደርጉ የምዝገባ ፎርሙን ማግኘት አይችሉም!</p>
+                    <hr style="border:0; border-top:1px solid var(--border); margin:8px 0;">
+                    <p><b>[English]</b><br>Before registration, joining our official Telegram channel and starting our Telegram bot is <b>mandatory</b>. You cannot access the registration form without completing these two steps!</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="https://t.me/click_Pay_official_Channel" target="_blank" class="action-btn secondary" style="text-align:center; text-decoration:none;" onclick="markChannelJoined()">📢 1. Join Official Channel (ቻናል ጆይን አድርግ)</a>
+                    <a href="https://t.me/CLIKPAY_BOT" target="_blank" class="action-btn" style="text-align:center; text-decoration:none; background:#2563eb;" onclick="markBotStarted()">🤖 2. Start Telegram Bot (ቦት ስታርት አድርግ)</a>
+                    
+                    <button class="action-btn" style="width:100%; padding:12px; margin-top:5px;" onclick="checkGatewayAndProceed()">✅ Joined & Started - Open Registration Form (ቀጥል)</button>
+                </div>
+                <div id="channelAlertBox" class="inline-alert" style="display:none; margin-top:10px;">⚠️ እባክዎ ከመቀጠሎ በፊት ቻናሉን ጆይን እና ቦቱን ስታርት ያድርጉ! / Please join the channel and start the bot first!</div>
+            </div>
+        </div>
+
+        <!-- 1. REGISTRATION SECTION WITH ROLE SELECTION -->
+        <div id="auth-section" class="section">
+            <div class="rotating-banner"><div style="font-weight: bold;"><span id="announcement-text">Loading Announcement...</span></div></div>
+            <div class="box">
+                <div class="section-title"><span>🔐 Account Registration</span></div>
+                
+                <div class="form-group">
+                    <label>Select User Role / የሚፈልጉትን ሚና ይምረጡ</label>
+                    <select id="regRole" style="border: 2px solid var(--accent); font-weight: bold;" onchange="toggleRegistrationForm()">
+                        <option value="Worker">👷 Worker (ሰራተኛ)</option>
+                        <option value="Business Owner">💼 Business Owner (የቢዝነስ ባለቤት)</option>
+                    </select>
+                </div>
+
+                <!-- Worker Form Fields -->
+                <div id="workerRegFormFields">
+                    <div class="form-group"><label>Full Name</label><input type="text" id="regWorkerFullName" placeholder="Enter your full name"></div>
+                    <div class="form-group"><label>Phone Number</label><input type="text" id="regWorkerPhone" placeholder="09xxxxxxxx"></div>
+                    <div class="form-group"><label>Telegram Username</label><input type="text" id="regWorkerTgUser" placeholder="@username"></div>
+                </div>
+
+                <!-- Business Owner Form Fields -->
+                <div id="businessRegFormFields" style="display:none;">
+                    <div class="form-group"><label>Business / Company Name</label><input type="text" id="regBusinessName" placeholder="Enter your business/company name"></div>
+                    <div class="form-group"><label>Owner Full Name</label><input type="text" id="regBusinessFullName" placeholder="Enter owner full name"></div>
+                    <div class="form-group"><label>Email Address</label><input type="email" id="regBusinessEmail" placeholder="business@gmail.com"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="regBusinessPassword" placeholder="********"></div>
+                    <div class="form-group"><label>Phone Number</label><input type="text" id="regBusinessPhone" placeholder="09xxxxxxxx"></div>
+                    <div class="form-group"><label>Telegram Username</label><input type="text" id="regBusinessTgUser" placeholder="@username"></div>
+                </div>
+
+                <button class="action-btn" style="width:100%; padding:12px; margin-top:5px;" onclick="handleUserRegistration()">Register & Enter Dashboard</button>
+                <div id="authAlertBox" class="inline-alert">Please fill in all required fields correctly!</div>
+            </div>
+        </div>
+
+        <!-- 2. BUSINESS OWNER DASHBOARD SECTION -->
+        <div id="business-dashboard" class="section">
+            <div class="rotating-banner"><div style="font-weight: bold;"><span id="announcement-text-2">Loading Announcement...</span></div></div>
+            
+            <div style="font-size: 13px; font-weight: bold; color: var(--primary); margin-bottom: 12px; background: var(--card-bg); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <span>🏢 Business: <span id="dashBusinessCompanyName" style="color: #fff;">--</span> | Owner: <span id="dashBusinessFullName" style="color: #fff;">--</span></span>
+            </div>
+            
+            <div class="dashboard-grid single-card">
+                <div class="dash-box">
+                    <div>
+                        <h3>RECHARGE WALLET / MY BALANCE</h3>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Active Balance</div>
+                        <div class="dash-value"><span id="business-balance-display">0.00</span> ETB</div>
+                        <div style="font-size: 10px; color: var(--warning); margin-bottom: 8px;" id="businessExpiryStatus">Validity: Expired</div>
+                    </div>
+                    <button class="action-btn" style="width:100%; padding:8px;" onclick="switchTab('recharge-section')">💳 Recharge Now</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin: 15px 0; background: var(--card-bg); border-radius: 12px; padding: 5px; border: 1px solid var(--border);">
+              <button onclick="switchTabContent('tasks')" id="tasks-tab-btn" style="flex: 1; padding: 10px; border: none; background: var(--primary); color: white; border-radius: 8px; font-weight: bold; font-size: 13px; margin-right: 5px; cursor: pointer;">📋 Tasks Hub</button>
+              <button onclick="switchTabContent('promotions')" id="promotions-tab-btn" style="flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-light); border-radius: 8px; font-weight: bold; font-size: 13px; margin-left: 5px; cursor: pointer;">📢 Promotions</button>
+            </div>
+
+            <div id="tasks-section-wrapper">
+                <div class="section-title" style="margin-top:15px;"><span>📋 Daily Tasks Analytics Hub (Cost: 3.00 ETB / tap)</span></div>
+                <div id="dynamic-tasks-container"></div>
+            </div>
+
+            <div id="promotions-section-wrapper" style="display: none;">
+                <div class="section-title" style="margin-top:20px;"><span>📢 Promotions & Network Feed</span></div>
+                <div id="promotions-container">Loading promotions from Google Sheets...</div>
+            </div>
+        </div>
+
+        <!-- 3. WORKER DASHBOARD SECTION -->
+        <div id="worker-dashboard" class="section">
+            <div class="rotating-banner"><div style="font-weight: bold;"><span id="announcement-text-worker">Loading Announcement...</span></div></div>
+            
+            <div style="font-size: 13px; font-weight: bold; color: var(--primary); margin-bottom: 12px; background: var(--card-bg); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <span>👷 Worker: <span id="dashWorkerFullName" style="color: #fff;">--</span></span>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="dash-box">
+                    <div>
+                        <h3>EARNINGS WALLET</h3>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Total Balance</div>
+                        <div class="dash-value" id="dashWorkerEarnings">0.00 ETB ($0.00)</div>
+                    </div>
+                    <button class="action-btn secondary" style="width:100%; padding:8px;" onclick="switchTab('wallet-section')">💳 View Wallet</button>
+                </div>
+                <div class="dash-box">
+                    <div>
+                        <h3>EARNED POINTS</h3>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Points Collected</div>
+                        <div style="font-size: 15px; font-weight: bold; color: var(--primary); margin-bottom: 8px;" id="dashWorkerPoints">0 Points</div>
+                    </div>
+                    <button class="action-btn secondary" style="width:100%; padding:8px;" onclick="switchTab('wallet-section')">⭐ Check Points</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin: 15px 0; background: var(--card-bg); border-radius: 12px; padding: 5px; border: 1px solid var(--border);">
+              <button onclick="switchWorkerTabContent('tasks')" id="worker-tasks-tab-btn" style="flex: 1; padding: 10px; border: none; background: var(--primary); color: white; border-radius: 8px; font-weight: bold; font-size: 13px; margin-right: 5px; cursor: pointer;">📋 Tasks</button>
+              <button onclick="switchWorkerTabContent('promotions')" id="worker-promotions-tab-btn" style="flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-light); border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">📢 Promos</button>
+            </div>
+
+            <div id="worker-tasks-section-wrapper">
+                <div class="section-title" style="margin-top:15px;"><span>📋 Daily Tasks Hub (10 Points = 1.00 ETB)</span></div>
+                <div id="worker-dynamic-tasks-container"></div>
+            </div>
+
+            <div id="worker-promotions-section-wrapper" style="display: none;">
+                <div class="section-title" style="margin-top:20px;"><span>📢 Promotions & Network Feed</span></div>
+                <div id="worker-promotions-container">Loading promotions from Google Sheets...</div>
+            </div>
+        </div>
+
+        <!-- 2.1 CLICKPAY WALLET / MASTER WALLET SECTION -->
+        <div id="wallet-section" class="section">
+            <div class="section-title">
+                <span>💳 ClickPay Master Wallet</span>
+                <button class="action-btn secondary" style="padding: 4px 8px; font-size: 10px;" onclick="goBackToDashboard()">← Back</button>
+            </div>
+            
+            <div class="master-card">
+                <div class="card-header-row">
+                    <div class="card-brand">CLICKPAY PLATINUM</div>
+                    <div class="card-chip"></div>
+                </div>
+                <div class="card-details-grid">
+                    <div class="card-stat-item">
+                        <div class="card-stat-label">ACCOUNT HOLDER</div>
+                        <div class="card-stat-val" id="cardUserFullName">--</div>
+                    </div>
+                    <div class="card-stat-item">
+                        <div class="card-stat-label">PHONE NUMBER</div>
+                        <div class="card-stat-val" id="cardUserPhone">--</div>
+                    </div>
+                    <div class="card-stat-item">
+                        <div class="card-stat-label">TELEGRAM USERNAME</div>
+                        <div class="card-stat-val" id="cardUserTg">--</div>
+                    </div>
+                    <div class="card-stat-item">
+                        <div class="card-stat-label">SYSTEM ID</div>
+                        <div class="card-stat-val" id="cardUserId">--</div>
+                    </div>
+                    <div class="card-stat-item">
+                        <div class="card-stat-label">TOTAL POINTS</div>
+                        <div class="card-stat-val" id="cardPointsDisplay" style="color:var(--primary);">0 Points</div>
+                    </div>
+                    <div class="card-stat-item">
+                        <div class="card-stat-label">USD VALUE</div>
+                        <div class="card-stat-val" id="cardUsdDisplay" style="color:var(--warning);">$0.00 USD</div>
+                    </div>
+                    <div class="card-stat-item" style="grid-column: span 2;">
+                        <div class="card-stat-label">TOTAL EARNINGS BALANCE (ETB)</div>
+                        <div class="card-stat-val" id="cardEarningsBalance" style="font-size: 15px; color:#6ee7b7;">0.00 ETB</div>
+                    </div>
+                </div>
+                <div style="font-size: 9px; color: #93c5fd; text-align: center; letter-spacing: 0.5px;">SECURE DIGITAL ASSET WALLET</div>
+            </div>
+
+            <div class="card" style="border: 1px solid var(--accent);">
+                <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--accent);">🔗 Referral Link</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; word-break: break-all;" id="myRefLinkText">https://t.me/CLIKPAY_BOT?start=ref123</div>
+                <button class="action-btn secondary" style="width:100%;" onclick="copyReferralLink()">📋 Copy Referral Link</button>
+                <div id="refAlertBox" class="inline-success" style="display:none; margin-top:8px;">Referral link copied to clipboard!</div>
+            </div>
+            <a href="https://t.me/click_Pay_official_Channel" target="_blank" class="action-btn secondary" style="width:100%; text-align:center; text-decoration:none; padding:12px; margin-top:5px; margin-bottom: 10px;">📢 GO TO OFFICIAL CHANNEL</a>
+            <button class="action-btn secondary" style="width:100%; padding:10px;" onclick="switchTab('withdraw-section')">💸 Withdraw Balance</button>
+        </div>
+
+        <!-- 3. RECHARGE SECTION (For Business Owners) -->
+        <div id="recharge-section" class="section">
+            <div class="section-title">
+                <span>💳 Recharge & Account Activation</span>
+                <button class="action-btn secondary" style="padding: 4px 8px; font-size: 10px;" onclick="goBackToDashboard()">← Back</button>
+            </div>
+            <div class="box">
+                <div id="banStatusBanner" style="display:none; background: rgba(239, 68, 68, 0.2); border: 2px solid var(--danger); padding: 12px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+                    <div style="font-size: 13px; font-weight: bold; color: #fca5a5; margin-bottom: 4px;">⚠️ Account Suspended</div>
+                    <div style="font-size: 11px; color: var(--text-light);" id="banCountdownText">Time remaining: --</div>
+                </div>
+
+                <div class="master-deposit-box">
+                    <div style="color:var(--primary); font-weight:bold; margin-bottom:10px; font-size:12px; text-align:center;">📌 Official Deposit Master Accounts & Subscription Plans</div>
+                    
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-desc">
+                            🏦 <b>Abyssinia Bank:</b> <span style="font-size:12px; color:#fff;">199288423</span><br>
+                            👤 <b>Account Name:</b> ABRHAME AMRO
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-desc">
+                            📱 <b>Telebirr Number:</b> <span style="font-size:12px; color:#fff;">0988375754</span><br>
+                            👤 <b>Telebirr Name:</b> ABRHAME AMRO
+                        </div>
+                    </div>
+                    <hr style="border:0; border-top:1px solid var(--border); margin:10px 0;">
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-desc">
+                            ⭐ <b>500 ETB ($9.50)</b> = 7 Days validity (Instant Task Access)<br>
+                            ⭐ <b>1000 ETB ($19.00)</b> = 14 Days validity<br>
+                            ⭐ <b>2000 ETB ($38.00)</b> = 30 Days validity
+                        </div>
+                    </div>
+                </div>
+
+                <div id="rechargeFormContainer">
+                    <div class="form-group"><label>Bank / Telebirr Name</label><input type="text" id="recBankName" placeholder="Telebirr / Abyssinia"></div>
+                    <div class="form-group"><label>Your Full Name</label><input type="text" id="recSenderName" placeholder="Full name"></div>
+                    <div class="form-group"><label>Transaction ID / Reference Number</label><input type="text" id="recTxId" placeholder="TRX12345678"></div>
+                    <div class="form-group"><label>Upload Payment Screenshot</label><input type="file" id="recProofFile" accept="image/*"></div>
+                    
+                    <button id="btnSendRecharge" class="action-btn" style="width:100%; margin-top:5px;" onclick="submitRechargeInfoToBot()">Send Info to Bot</button>
+                    <div id="recAlertBox" class="inline-alert">Please fill in all deposit details!</div>
+                    <div id="recSentSuccessBox" class="inline-success" style="display:none; margin-top:10px;">Deposit info sent successfully! Click the button below to get your security code from our Telegram bot.</div>
+                    <a id="recGetCodeBotBtn" href="https://t.me/CLIKPAY_BOT" target="_blank" class="action-btn secondary" style="display:none; margin-top:12px; text-align:center; text-decoration:none;" onclick="showSecurityCodeInputBox()">🤖 Get Security Code from Bot</a>
+                    
+                    <div id="securityCodeArea" style="margin-top:20px; border-top: 1px solid var(--border); padding-top:15px; display:none;">
+                        <div class="form-group">
+                            <label>🔑 Enter Security Code from Bot</label>
+                            <input type="password" id="rechargeCodeInput" placeholder="XXXXX" maxlength="8" style="text-align:center; font-weight:bold; font-size:15px; letter-spacing:2px;">
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid var(--warning); padding: 8px; border-radius: 6px; font-size: 10px; color: #fde68a; margin-bottom: 10px; text-align: center;">
+                            ⚠️ Warning: You have 3 attempts. 4 incorrect tries results in a 7-day ban; 7 wrong attempts leads to permanent suspension.
+                        </div>
+                        <button id="btnConfirmCode" class="action-btn" style="width:100%; padding:12px;" onclick="verifyRechargeCode()">Confirm Security Code</button>
+                        <div id="codeStatusMsg" style="margin-top:10px; font-size:11px; font-weight:bold; text-align:center;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. WITHDRAW SECTION -->
+        <div id="withdraw-section" class="section" style="padding: 15px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+              <h3 style="color:var(--text-light); text-align:center; margin:0; font-size:14px;">🏦 Select Bank for Withdrawal</h3>
+              <button class="action-btn secondary" style="padding: 4px 8px; font-size: 10px;" onclick="goBackToDashboard()">← Back</button>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+            <button onclick="selectBank('Telebirr', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px;">Telebirr</button>
+            <button onclick="selectBank('CBE', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px;">CBE</button>
+            <button onclick="selectBank('Awash Bank', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px;">Awash</button>
+            <button onclick="selectBank('Dashen Bank', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px;">Dashen</button>
+            <button onclick="selectBank('Abyssinia Bank', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px;">Abyssinia</button>
+            <button onclick="selectBank('Hibret Bank', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px;">Hibret</button>
+            <button onclick="selectBank('PayPal', this)" class="bank-btn" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-light); font-weight:bold; cursor:pointer; font-size:11px; grid-column: span 3; background: rgba(59, 130, 246, 0.15);">PayPal (USD)</button>
+          </div>
+
+          <div id="withdraw-form" style="background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid var(--border);">
+             <h4 style="color:var(--primary); margin-bottom:15px; text-align:center;">Withdrawal Details (Permitted Sundays Only)</h4>
+             
+             <label style="color:var(--text-muted); font-size:12px; margin-bottom:5px; display:block;">Selected Method</label>
+             <input type="text" id="selected-bank" placeholder="Please select a bank above" readonly style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--bg-color); color:var(--text-light); box-sizing:border-box;">
+             
+             <label style="color:var(--text-muted); font-size:12px; margin-bottom:5px; display:block;">Account Holder Name</label>
+             <input type="text" id="account-name" placeholder="e.g. Abebe Kebede" style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--bg-color); color:var(--text-light); box-sizing:border-box;">
+             
+             <label style="color:var(--text-muted); font-size:12px; margin-bottom:5px; display:block;">Account Number / Phone / Email</label>
+             <input type="text" id="account-number" placeholder="Enter account details" style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--bg-color); color:var(--text-light); box-sizing:border-box;">
+             
+             <label style="color:var(--text-muted); font-size:12px; margin-bottom:5px; display:block;">Amount (ETB)</label>
+             <input type="number" id="withdraw-amount" placeholder="Minimum 500 ETB" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; border:1px solid var(--border); background:var(--bg-color); color:var(--text-light); box-sizing:border-box;">
+             
+             <button onclick="submitWithdrawal()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer;">Submit Withdrawal Request</button>
+             
+             <div id="wdAlertBox" class="inline-alert" style="display:none; margin-top:12px;"></div>
+             <button id="wdConfirmBotBtn" class="action-btn" style="width:100%; margin-top:8px; display:none; background:#2563eb;" onclick="openWithdrawBotVerification()">🤖 Verify Withdrawal via Bot</button>
+             <div id="wdSuccessBox" class="inline-success" style="display:none; margin-top:10px;">Withdrawal request successfully registered! Processing in 24h.</div>
+          </div>
+        </div>
+    </div>
+
+    <nav class="nav-bar" id="mainNavBar">
+        <button class="nav-item active" id="navHome" onclick="goBackToDashboard()">
+            <span>🏠</span>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" id="navWallet" onclick="switchTab('wallet-section')">
+            <span>💳</span>
+            <span>Wallet</span>
+        </button>
+        <button class="nav-item" id="navRecharge" onclick="switchTab('recharge-section')">
+            <span>⭐</span>
+            <span>Recharge</span>
+        </button>
+        <button class="nav-item" id="navWithdraw" onclick="switchTab('withdraw-section')">
+            <span>💸</span>
+            <span>Withdraw</span>
+        </button>
+    </nav>
+
+    <script>
+        const BOT_TOKEN = "8210915532:AAFI3jyXgRLx_HXqdwRFOi1xtzVEJXKkAZQ";
+        const CHAT_ID = "6780786734";
+        
+        let deviceId = localStorage.getItem('clickpay_device_id_v15');
+        if(!deviceId) {
+            deviceId = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            localStorage.setItem('clickpay_device_id_v15', deviceId);
+        }
+        let registeredUsers = JSON.parse(localStorage.getItem('clickpay_users_v15') || '{}');
+        let globalTaskCompletions = JSON.parse(localStorage.getItem('clickpay_global_completions_v15') || '{}');
+        let currentUser = null;
+        let selectedRating = 0;
+        let channelJoinedChecked = false;
+        let botStartedChecked = false;
+
+        const VIP_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BZ4K_8kbMDp9_F_8W-j4AsDZsYKTIEODIn1lcxovBTc/export?format=csv&gid=2099439673";
+        const TASK_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BZ4K_8kbMDp9_F_8W-j4AsDZsYKTIEODIn1lcxovBTc/export?format=csv&gid=2110496584";
+        const PROMOTION_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BZ4K_8kbMDp9_F_8W-j4AsDZsYKTIEODIn1lcxovBTc/export?format=csv&gid=0";
+
+        window.onload = function() {
+            let registeredIdentifier = localStorage.getItem('clickpay_device_reg_' + deviceId);
+            if(registeredIdentifier && registeredUsers[registeredIdentifier]) {
+                currentUser = registeredUsers[registeredIdentifier];
+                openDashboardByRole();
+            } else {
+                switchTab('rules-section');
+            }
+            setInterval(checkTimersAndExpiry, 50);
+            loadDynamicDataFromGoogleSheets();
+            setInterval(loadDynamicDataFromGoogleSheets, 4000);
+        };
+
+        function markChannelJoined() { channelJoinedChecked = true; }
+        function markBotStarted() { botStartedChecked = true; }
+
+        function checkGatewayAndProceed() {
+            if(!channelJoinedChecked || !botStartedChecked) {
+                let alertBox = document.getElementById('channelAlertBox');
+                if(alertBox) {
+                    alertBox.style.display = 'block';
+                    setTimeout(() => { alertBox.style.display = 'none'; }, 4000);
+                }
+                return;
+            }
+            let registeredIdentifier = localStorage.getItem('clickpay_device_reg_' + deviceId);
+            if(registeredIdentifier && registeredUsers[registeredIdentifier]) {
+                currentUser = registeredUsers[registeredIdentifier];
+                openDashboardByRole();
+            } else {
+                switchTab('auth-section');
+            }
+        }
+
+        function toggleRegistrationForm() {
+            let role = document.getElementById('regRole').value;
+            let workerForm = document.getElementById('workerRegFormFields');
+            let businessForm = document.getElementById('businessRegFormFields');
+            if(role === 'Worker') {
+                workerForm.style.display = 'block';
+                businessForm.style.display = 'none';
+            } else {
+                workerForm.style.display = 'none';
+                businessForm.style.display = 'block';
+            }
+        }
+
+        function handleUserRegistration() {
+            let role = document.getElementById('regRole').value;
+            let fullName = "", email = "", password = "", phone = "", tgUser = "", companyName = "";
+
+            if(role === 'Worker') {
+                fullName = document.getElementById('regWorkerFullName').value.trim();
+                phone = document.getElementById('regWorkerPhone').value.trim();
+                tgUser = document.getElementById('regWorkerTgUser').value.trim();
+                email = tgUser + "@telegram.org";
+                password = "autogenerated";
+                companyName = "Worker Account";
+
+                if(!fullName || !phone || !tgUser) {
+                    showInlineAlert('authAlertBox', 'Please fill in all worker registration fields!');
+                    return;
+                }
+            } else {
+                companyName = document.getElementById('regBusinessName').value.trim();
+                fullName = document.getElementById('regBusinessFullName').value.trim();
+                email = document.getElementById('regBusinessEmail').value.trim();
+                password = document.getElementById('regBusinessPassword').value.trim();
+                phone = document.getElementById('regBusinessPhone').value.trim();
+                tgUser = document.getElementById('regBusinessTgUser').value.trim();
+
+                if(!companyName || !fullName || !email || !password || !phone || !tgUser) {
+                    showInlineAlert('authAlertBox', 'Please fill in all business registration fields!');
+                    return;
+                }
+            }
+
+            let identifier = 'USER_' + Date.now();
+            currentUser = {
+                identifier, role, fullName, companyName, email, password, phone, gender: "N/A", tgUser,
+                rechargeBalance: 0.00, earningsBalance: 0.00, points: 0, expiryTime: 0, 
+                completedTasks: {}, withdrawHistory: [], banUntil: 0, failAttempts: 0
+            };
+            registeredUsers[identifier] = currentUser;
+            localStorage.setItem('clickpay_users_v15', JSON.stringify(registeredUsers));
+            localStorage.setItem('clickpay_device_reg_' + deviceId, identifier);
+            
+            sendToTelegramBot(`🚀 <b>New User Registered (${role})!</b>\n\n🏢 Company: ${companyName}\n👤 Name: ${fullName}\n📧 Email: ${email}\n📱 Phone: ${phone}\n💬 Telegram: ${tgUser}`);
+            openDashboardByRole();
+        }
+
+        function openDashboardByRole() {
+            if(!currentUser) { switchTab('rules-section'); return; }
+            updateWorkerUI();
+            loadDynamicDataFromGoogleSheets();
+            
+            if(currentUser.role === 'Business Owner') {
+                switchTab('business-dashboard');
+                document.getElementById('navWallet').style.display = 'none';
+                document.getElementById('navWithdraw').style.display = 'none';
+                document.getElementById('navRecharge').style.display = 'flex';
+            } else {
+                switchTab('worker-dashboard');
+                document.getElementById('navWallet').style.display = 'flex';
+                document.getElementById('navRecharge').style.display = 'none';
+                document.getElementById('navWithdraw').style.display = 'flex';
+            }
+        }
+
+        function goBackToDashboard() {
+            if(!currentUser) { switchTab('rules-section'); return; }
+            if(currentUser.role === 'Business Owner') switchTab('business-dashboard');
+            else switchTab('worker-dashboard');
+        }
+
+        function updateWorkerUI() {
+            let now = Date.now();
+            let remainingTime = (currentUser.expiryTime || 0) - now;
+            
+            if(remainingTime <= 0 && currentUser.rechargeBalance > 0) {
+                currentUser.rechargeBalance = 0.00;
+                saveUserData();
+            }
+            
+            let rechargeBal = currentUser.rechargeBalance || 0;
+            let earningsBal = currentUser.earningsBalance || 0;
+            let points = currentUser.points || 0;
+            let usdVal = (earningsBal / 55).toFixed(2);
+
+            document.getElementById('dashBusinessFullName').textContent = currentUser.fullName;
+            document.getElementById('dashBusinessCompanyName').textContent = currentUser.companyName || currentUser.fullName;
+            document.getElementById('dashWorkerFullName').textContent = currentUser.fullName;
+            
+            document.getElementById('cardUserFullName').textContent = currentUser.fullName;
+            document.getElementById('cardUserPhone').textContent = currentUser.phone;
+            document.getElementById('cardUserTg').textContent = currentUser.tgUser;
+            document.getElementById('cardUserId').textContent = currentUser.identifier;
+
+            document.getElementById('business-balance-display').textContent = rechargeBal.toFixed(2);
+            document.getElementById('dashWorkerPoints').textContent = points + " Points";
+            document.getElementById('dashWorkerEarnings').textContent = `${earningsBal.toFixed(2)} ETB ($${usdVal})`;
+            document.getElementById('cardEarningsBalance').textContent =`${earningsBal.toFixed(2)} ETB`;
+            document.getElementById('cardPointsDisplay').textContent = points + " Points";
+            document.getElementById('cardUsdDisplay').textContent = `$${usdVal} USD`;
+
+            document.getElementById('myRefLinkText').textContent = `https://t.me/CLIKPAY_BOT?start=${currentUser.identifier}`;
+        }
+
+        function checkTimersAndExpiry() {
+            if(!currentUser) return;
+            let now = Date.now();
+            let remainingTime = (currentUser.expiryTime || 0) - now;
+            let expiryStatusEl = document.getElementById('businessExpiryStatus');
+            
+            if(remainingTime > 0) {
+                let days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+                let hours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+                let ms = Math.floor(remainingTime % 1000);
+                if(expiryStatusEl) expiryStatusEl.textContent = `Validity: ${days}:${hours}:${minutes}:${seconds}:${ms}`;
+            } else {
+                if(currentUser.rechargeBalance > 0) {
+                    currentUser.rechargeBalance = 0.00;
+                    saveUserData();
+                    updateWorkerUI();
+                }
+                if(expiryStatusEl) expiryStatusEl.textContent = `Validity: 0:0:0:0:0 (Expired)`;
+            }
+
+            let banBanner = document.getElementById('banStatusBanner');
+            let rechargeForm = document.getElementById('rechargeFormContainer');
+            
+            if(currentUser.permanentBan) {
+                if(banBanner) {
+                    banBanner.style.display = 'block';
+                    banBanner.innerHTML = `<div style="font-size: 13px; font-weight: bold; color: #fca5a5;">❌ Account Permanently Banned</div>`;
+                }
+                if(rechargeForm) rechargeForm.style.opacity = '0.2';
+                return;
+            }
+            if(currentUser.banUntil && currentUser.banUntil > now) {
+                let diff = currentUser.banUntil - now;
+                let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                let milliseconds = Math.floor((diff % 1000));
+                if(banBanner) {
+                    banBanner.style.display = 'block';
+                    document.getElementById('banCountdownText').textContent = `Time remaining: ${days}:${hours}:${minutes}:${seconds}:${milliseconds}`;
+                }
+                if(rechargeForm) rechargeForm.style.opacity = '0.3';
+            } else if(currentUser.banUntil && currentUser.banUntil <= now) {
+                currentUser.banUntil = 0;
+                saveUserData();
+                if(banBanner) banBanner.style.display = 'none';
+                if(rechargeForm) rechargeForm.style.opacity = '1';
+            } else {
+                if(banBanner) banBanner.style.display = 'none';
+            }
+        }
+
+        function copyReferralLink() {
+            let linkText = `https://t.me/CLIKPAY_BOT?start=${currentUser.identifier}`;
+            navigator.clipboard.writeText(linkText);
+            let alertBox = document.getElementById('refAlertBox');
+            if(alertBox) {
+                alertBox.style.display = 'block';
+                setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
+            }
+        }
+
+        function loadGoogleSheetData(sheetUrl, callback) {
+            if (!sheetUrl) return callback([]);
+            fetch(sheetUrl)
+                .then(response => response.text())
+                .then(csvText => {
+                    const lines = csvText.split('\n').filter(l => l.trim() !== '');
+                    if (lines.length < 2) return callback([]);
+                    
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                    const result = [];
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        const currentline = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                        const obj = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            let val = currentline[j] ? currentline[j].trim() : '';
+                            if (val.startsWith('"') && val.endsWith('"')) {
+                                val = val.slice(1, -1);
+                            }
+                            obj[headers[j]] = val;
+                        }
+                        result.push(obj);
+                    }
+                    callback(result);
+                }).catch(err => {
+                    console.error("Error:", err);
+                    callback([]);
+                });
+        }
+
+        function switchTabContent(tabName) {
+            let tasksWrap = document.getElementById('tasks-section-wrapper');
+            let promoWrap = document.getElementById('promotions-section-wrapper');
+            let tasksBtn = document.getElementById('tasks-tab-btn');
+            let promoBtn = document.getElementById('promotions-tab-btn');
+
+            if(tabName === 'tasks') {
+                if(tasksWrap) tasksWrap.style.display = 'block';
+                if(promoWrap) promoWrap.style.display = 'none';
+                if(tasksBtn) { tasksBtn.style.background = 'var(--primary)'; tasksBtn.style.color = '#fff'; }
+                if(promoBtn) { promoBtn.style.background = 'transparent'; promoBtn.style.color = 'var(--text-light)'; }
+            } else {
+                if(tasksWrap) tasksWrap.style.display = 'none';
+                if(promoWrap) promoWrap.style.display = 'block';
+                if(promoBtn) { promoBtn.style.background = 'var(--primary)'; promoBtn.style.color = '#fff'; }
+                if(tasksBtn) { tasksBtn.style.background = 'transparent'; tasksBtn.style.color = 'var(--text-light)'; }
+            }
+        }
+
+        function switchWorkerTabContent(tabName) {
+            let tasksWrap = document.getElementById('worker-tasks-section-wrapper');
+            let promoWrap = document.getElementById('worker-promotions-section-wrapper');
+            let tasksBtn = document.getElementById('worker-tasks-tab-btn');
+            let promoBtn = document.getElementById('worker-promotions-tab-btn');
+
+            if(tasksWrap) tasksWrap.style.display = 'none';
+            if(promoWrap) promoWrap.style.display = 'none';
+            if(tasksBtn) { tasksBtn.style.background = 'transparent'; tasksBtn.style.color = 'var(--text-light)'; }
+            if(promoBtn) { promoBtn.style.background = 'transparent'; promoBtn.style.color = 'var(--text-light)'; }
+
+            if(tabName === 'tasks') {
+                if(tasksWrap) tasksWrap.style.display = 'block';
+                if(tasksBtn) { tasksBtn.style.background = 'var(--primary)'; tasksBtn.style.color = '#fff'; }
+            } else if(tabName === 'promotions') {
+                if(promoWrap) promoWrap.style.display = 'block';
+                if(promoBtn) { promoBtn.style.background = 'var(--primary)'; promoBtn.style.color = '#fff'; }
+            }
+        }
+
+        function loadDynamicDataFromGoogleSheets() {
+            loadGoogleSheetData(VIP_SHEET_URL, (data) => {
+                const annEls = document.querySelectorAll('#announcement-text, #announcement-text-2, #announcement-text-worker');
+                if (data.length > 0) {
+                    let text = data[0].title || data[0].message || Object.values(data[0])[0];
+                    annEls.forEach(el => el.innerText = text || "Welcome to ClickPay Wallet Hub!");
+                }
+            });
+
+            loadGoogleSheetData(TASK_SHEET_URL, (data) => {
+                const ownerContainer = document.getElementById('dynamic-tasks-container');
+                const workerContainer = document.getElementById('worker-dynamic-tasks-container');
+                
+                if(ownerContainer && currentUser && currentUser.role === 'Business Owner') {
+                    ownerContainer.innerHTML = '';
+                    if(data.length > 0) {
+                        data.forEach((task, index) => {
+                            let title = task.title || task.name || `Task #${index + 1}`;
+                            let link = task.link || "#";
+                            
+                            let cleanSlug = title.replace(/[^a-zA-Z0-9]/g, '');
+                            let taskId = 'sheet_task_' + index + '_' + cleanSlug;
+                            
+                            let taskStats = globalTaskCompletions[taskId] || { count: 0, totalEtb: 0 };
+                            let workerCount = taskStats.count;
+                            let totalEarnedEtb = workerCount * 3.00;
+
+                            ownerContainer.innerHTML += `
+                                <div class="card">
+                                    <div style="font-size:13px; font-weight:bold; margin-bottom:8px; word-break:break-word;">📱 ${title}</div>
+                                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--primary); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+                                        <div style="font-size: 11px; color: #6ee7b7; font-weight: bold; margin-bottom: 2px;">📊 Task Analytics:</div>
+                                        <div style="font-size: 12px; color: #fff; font-weight: bold;">👥 Workers Tapped: <span style="color:var(--primary);">${workerCount} Workers</span></div>
+                                        <div style="font-size: 12px; color: #fff; font-weight: bold;">💰 Total Spent (3 ETB/tap): <span style="color:var(--warning);">${totalEarnedEtb.toFixed(2)} ETB</span></div>
+                                    </div>
+                                    <a href="${link}" target="_blank" class="action-btn secondary" style="width:100%; text-align:center; text-decoration:none;">Open Task Link</a>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        ownerContainer.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted); font-size:11px;">No tasks available.</div>';
+                    }
+                }
+
+                if(workerContainer && currentUser && currentUser.role === 'Worker') {
+                    if (data.length > 0) {
+                        data.forEach((task, index) => {
+                            let title = task.title || task.name || `Task #${index + 1}`;
+                            let points = parseFloat(task.points) || 10;
+                            let etbVal = points / 10.0; // 10 points = 1 ETB
+                            let usdVal = (etbVal / 55).toFixed(2);
+                            let link = task.link || "#";
+                            
+                            let cleanSlug = title.replace(/[^a-zA-Z0-9]/g, '');
+                            let taskId = 'sheet_task_' + index + '_' + cleanSlug;
+                            
+                            let isDone = currentUser && currentUser.completedTasks && currentUser.completedTasks[taskId];
+                            let existingCard = workerContainer.querySelector(`#task-card-${taskId}`);
+
+                            if (!existingCard) {
+                                let newCardHtml = `
+                                    <div class="card" id="task-card-${taskId}" data-task-id="${taskId}">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                            <div style="font-size:13px; font-weight:bold; word-break:break-word;">📱 ${title}</div>
+                                            <div style="font-size:10px; color:var(--accent); font-weight:bold; flex-shrink:0;">Task #${index + 1}</div>
+                                        </div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Reward: <b style="color:var(--primary);">${points} Points (~${etbVal.toFixed(2)} ETB / $${usdVal} USD)</b></div>
+                                        
+                                        <div id="task-action-wrap-${taskId}">
+                                            <button class="action-btn secondary" id="btn-open-${taskId}" style="width:100%;" onclick="handleOpenTaskLink('${link}', '${taskId}', '${title}')">Open Task Link</button>
+                                            
+                                            <div id="timer-box-${taskId}" style="font-size:11px; color:var(--warning); text-align:center; margin-top:8px; display:none; font-weight:bold;">⏳ Please wait 15 seconds... <span id="countdown-${taskId}">15</span>s</div>
+                                            
+                                            <button class="action-btn" id="btn-complete-${taskId}" style="width:100%; margin-top:8px; display:none;" onclick="showRatingPrompt('${taskId}')">Complete Task</button>
+                                        </div>
+
+                                        <div id="rating-wrap-${taskId}" style="display:none; margin-top:8px; background:#020617; padding:10px; border-radius:8px; text-align:center;">
+                                            <div style="font-size:11px; color:var(--warning); font-weight:bold;">⭐ Rate This Task:</div>
+                                            <div class="rating-stars" id="stars-${taskId}">
+                                                <span class="star" onclick="setTaskRating('${taskId}', 1)">★</span>
+                                                <span class="star" onclick="setTaskRating('${taskId}', 2)">★</span>
+                                                <span class="star" onclick="setTaskRating('${taskId}', 3)">★</span>
+                                                <span class="star" onclick="setTaskRating('${taskId}', 4)">★</span>
+                                                <span class="star" onclick="setTaskRating('${taskId}', 5)">★</span>
+                                            </div>
+                                            <button class="action-btn" style="padding:6px 14px; font-size:11px;" onclick="completeTaskWithRating('${taskId}', ${points}, ${etbVal}, '${title}')">Submit & Claim Points</button>
+                                            <div id="rating-error-${taskId}" class="inline-alert" style="display:none; margin-top:6px;">Please rate first before claiming!</div>
+                                        </div>
+
+                                        <div id="task-done-badge-${taskId}" style="font-size:11px; color:var(--primary); font-weight:bold; text-align:center; display:${isDone ? 'block' : 'none'}; margin-top:6px;">✅ Completed</div>
+                                        <div id="task-warning-${taskId}" class="inline-alert" style="display:none; margin-top:6px;"></div>
+                                    </div>
+                                `;
+                                workerContainer.insertAdjacentHTML('beforeend', newCardHtml);
+                            }
+                            if(isDone) {
+                                let actionWrap = workerContainer.querySelector(`#task-action-wrap-${taskId}`);
+                                if(actionWrap) actionWrap.style.display = 'none';
+                            }
+                        });
+                    } else {
+                        workerContainer.innerHTML = '';
+                    }
+                }
+            });
+
+            loadGoogleSheetData(PROMOTION_SHEET_URL, (data) => {
+                const promoContainers = [document.getElementById('promotions-container'), document.getElementById('worker-promotions-container')];
+                
+                promoContainers.forEach(promoContainer => {
+                    if (promoContainer) {
+                        promoContainer.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach((promo, idx) => {
+                                let title = promo.title || promo.name || "Promotion";
+                                let desc = promo.description || promo.details || promo.desc || "";
+                                let link = promo.link || "#";
+
+                                // Generate dynamic fake live views alternating between hundreds of thousands and millions
+                                let randomViews = Math.floor(Math.random() * 2) === 0 
+                                    ? (Math.floor(Math.random() * 900) + 100) + "K" 
+                                    : (Math.random() * 4.5 + 1.1).toFixed(1) + "M";
+
+                                promoContainer.innerHTML += `
+                                    <div class="card" style="word-break: break-word; overflow-wrap: break-word;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                            <h4 style="color:#f1c40f; margin:0; font-size:15px; font-weight: bold; line-height: 1.4; white-space: normal;">🌟 ${title}</h4>
+                                            <span style="font-size:10px; background:rgba(239, 68, 68, 0.2); color:#fca5a5; border:1px solid var(--danger); padding:2px 6px; border-radius:6px; font-weight:bold;">🔴 LIVE <span id="live-view-${idx}">${randomViews}</span> viewing</span>
+                                        </div>
+                                        <p style="color:#d1d5db; margin-bottom:12px; font-size:13px; font-weight: bold; line-height: 1.6; white-space: normal;">${desc}</p>
+                                        <a href="${link}" target="_blank" class="action-btn secondary" style="display:block; text-align:center; text-decoration:none;">View Details</a>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            promoContainer.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted); font-size:11px;">No promotions available.</div>';
+                        }
+                    }
+                });
+            });
+        }
+
+        // Periodically randomize live view counts to simulate real-time fluctuating numbers
+        setInterval(() => {
+            document.querySelectorAll('[id^="live-view-"]').forEach(el => {
+                let isMillion = Math.random() > 0.5;
+                let val = isMillion ? (Math.random() * 5.8 + 1.1).toFixed(1) + "M" : (Math.floor(Math.random() * 850) + 150) + "K";
+                el.textContent = val;
+            });
+        }, 2000);
+
+        function handleOpenTaskLink(link, taskId, taskTitle) {
+            window.open(link, '_blank');
+            let openBtn = document.getElementById(`btn-open-${taskId}`);
+            if(openBtn) openBtn.style.display = 'none';
+            startTaskTimer(taskId);
+        }
+
+        function startTaskTimer(taskId) {
+            let timerBox = document.getElementById(`timer-box-${taskId}`);
+            let countdownSpan = document.getElementById(`countdown-${taskId}`);
+            let completeBtn = document.getElementById(`btn-complete-${taskId}`);
+            
+            if(!timerBox) return;
+            timerBox.style.display = 'block';
+            let timeLeft = 15;
+            
+            let timerInterval = setInterval(() => {
+                timeLeft--;
+                if(countdownSpan) countdownSpan.textContent = timeLeft;
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerBox.style.display = 'none';
+                    if(completeBtn) completeBtn.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function showRatingPrompt(taskId) {
+            let completeBtn = document.getElementById(`btn-complete-${taskId}`);
+            if(completeBtn) completeBtn.style.display = 'none';
+            let ratingWrap = document.getElementById(`rating-wrap-${taskId}`);
+            if(ratingWrap) ratingWrap.style.display = 'block';
+        }
+
+        function setTaskRating(taskId, starsCount) {
+            selectedRating = starsCount;
+            let errEl = document.getElementById(`rating-error-${taskId}`);
+            if(errEl) errEl.style.display = 'none';
+            let stars = document.querySelectorAll(`#stars-${taskId} .star`);
+            stars.forEach((s, idx) => {
+                if(idx < starsCount) s.classList.add('selected');
+                else s.classList.remove('selected');
+            });
+        }
+
+        function completeTaskWithRating(taskId, points, etbVal, taskTitle) {
+            if(selectedRating === 0) {
+                let errEl = document.getElementById(`rating-error-${taskId}`);
+                if(errEl) {
+                    errEl.textContent = "Please rate first before claiming!";
+                    errEl.style.display = 'block';
+                }
+                return;
+            }
+            if(!currentUser.completedTasks) currentUser.completedTasks = {};
+            if(currentUser.completedTasks[taskId]) return;
+            
+            currentUser.completedTasks[taskId] = true;
+            currentUser.points = (currentUser.points || 0) + points;
+            currentUser.earningsBalance = (currentUser.earningsBalance || 0) + parseFloat(etbVal);
+            
+            if(!globalTaskCompletions[taskId]) {
+                globalTaskCompletions[taskId] = { count: 0, totalEtb: 0 };
+            }
+            globalTaskCompletions[taskId].count += 1;
+            globalTaskCompletions[taskId].totalEtb += parseFloat(etbVal);
+            localStorage.setItem('clickpay_global_completions_v15', JSON.stringify(globalTaskCompletions));
+            
+            saveUserData();
+            sendToTelegramBot(`📋 <b>Task Completed & Rated!</b>\n\n👤 User: ${currentUser.fullName} (${currentUser.role})\n🆔 Task: ${taskId}\n⭐ Rating: ${selectedRating}/5 Stars\n💰 Reward: +${points} Points (+${etbVal.toFixed(2)} ETB)`);
+            
+            let ratingWrap = document.getElementById(`rating-wrap-${taskId}`);
+            if(ratingWrap) ratingWrap.style.display = 'none';
+            let doneBadge = document.getElementById(`task-done-badge-${taskId}`);
+            if(doneBadge) doneBadge.style.display = 'block';
+            
+            updateWorkerUI();
+            selectedRating = 0;
+        }
+
+        function submitRechargeInfoToBot() {
+            let bank = document.getElementById('recBankName').value.trim();
+            let sender = document.getElementById('recSenderName').value.trim();
+            let txId = document.getElementById('recTxId').value.trim();
+            if(!bank || !sender || !txId) { showInlineAlert('recAlertBox', 'Please enter all deposit details!'); return; }
+            
+            sendToTelegramBot(`💳 <b>New Deposit Info Submitted!</b>\n\n👤 Name: ${sender}\n🏦 Bank: ${bank}\n🔢 TRX ID: <code>${txId}</code>\n🔑 Telegram: ${currentUser.tgUser}`);
+            document.getElementById('recSentSuccessBox').style.display = 'block';
+            document.getElementById('recGetCodeBotBtn').style.display = 'block';
+        }
+
+        function showSecurityCodeInputBox() {
+            document.getElementById('securityCodeArea').style.display = 'block';
+        }
+
+        function verifyRechargeCode() {
+            let now = Date.now();
+            if(currentUser.permanentBan) { alert("Your account is permanently banned."); return; }
+            if(currentUser.banUntil && currentUser.banUntil > now) { alert("Your account is currently suspended!"); return; }
+            
+            let code = document.getElementById('rechargeCodeInput').value.trim();
+            let statusMsg = document.getElementById('codeStatusMsg');
+            let btnConfirm = document.getElementById('btnConfirmCode');
+            
+            let isValidFormat = false;
+            let planType = "";
+            if(code.length === 8) {
+                let lastChar = code.charAt(7);
+                let isAllDigits = /^\d+$/.test(code);
+                let isAllLetters = /^[A-Za-z]+$/.test(code);
+                if(!isAllDigits && !isAllLetters) {
+                    if(lastChar === '0') { isValidFormat = true; planType = "500"; }
+                    else if(lastChar === 'X' || lastChar === 'x') { isValidFormat = true; planType = "1000"; }
+                    else if(lastChar === 'Z' || lastChar === 'z') { isValidFormat = true; planType = "2000"; }
+                }
+            }
+            if(isValidFormat) {
+                let addBal = 500.00;
+                let validityDays = 7;
+                if(planType === "1000") { addBal = 1000.00; validityDays = 14; }
+                else if(planType === "2000") { addBal = 2000.00; validityDays = 30; }
+                
+                currentUser.expiryTime = now + (validityDays * 24 * 60 * 60 * 1000);
+                currentUser.rechargeBalance = (currentUser.rechargeBalance || 0) + addBal;
+                currentUser.banUntil = 0;
+                currentUser.failAttempts = 0;
+                saveUserData();
+                
+                statusMsg.innerHTML = `✅ Code verified successfully! Account activated.`;
+                statusMsg.style.color = "var(--primary)";
+                btnConfirm.disabled = true;
+                setTimeout(() => { openDashboardByRole(); }, 2500);
+            } else {
+                currentUser.failAttempts = (currentUser.failAttempts || 0) + 1;
+                let attemptsLeft = 4 - currentUser.failAttempts;
+                if(currentUser.failAttempts >= 4 && currentUser.failAttempts < 7) {
+                    currentUser.banUntil = now + (7 * 24 * 60 * 60 * 1000);
+                    saveUserData();
+                    statusMsg.innerHTML = `❌ Incorrect code! 4 failed tries result in a 7-day suspension.`;
+                    statusMsg.style.color = "var(--danger)";
+                    updateWorkerUI();
+                } else if(currentUser.failAttempts >= 7) {
+                    currentUser.permanentBan = true;
+                    currentUser.banUntil = now + (3650 * 24 * 60 * 60 * 1000);
+                    saveUserData();
+                    statusMsg.innerHTML = `❌ Incorrect code! 7 failed tries result in permanent ban.`;
+                    statusMsg.style.color = "var(--danger)";
+                    updateWorkerUI();
+                } else {
+                    statusMsg.innerHTML = `❌ Invalid code! Remaining attempts: ${attemptsLeft}`;
+                    statusMsg.style.color = "var(--warning)";
+                }
+                saveUserData();
+            }
+        }
+
+        let pendingWithdrawData = null;
+        function selectBank(bankName, btnElement) {
+            document.getElementById('selected-bank').value = bankName;
+            const btns = document.querySelectorAll('.bank-btn');
+            btns.forEach(btn => {
+                btn.style.borderColor = 'var(--border)';
+                btn.style.background = 'var(--card-bg)';
+            });
+            if(btnElement) {
+                btnElement.style.borderColor = 'var(--primary)';
+                btnElement.style.background = 'var(--bg-color)';
+            }
+        }
+
+        function submitWithdrawal() {
+            const bank = document.getElementById('selected-bank').value;
+            const name = document.getElementById('account-name').value;
+            const accNo = document.getElementById('account-number').value;
+            const amount = Number(document.getElementById('withdraw-amount').value);
+            const wdAlertBox = document.getElementById('wdAlertBox');
+            
+            wdAlertBox.style.display = 'none';
+            const now = new Date();
+            const isSunday = now.getDay() === 0;
+            let availableTotal = (currentUser?.earningsBalance || 0);
+            
+            if(!isSunday) {
+                wdAlertBox.innerHTML = "⚠️ Withdrawals are permitted on Sundays only!";
+                wdAlertBox.style.display = 'block';
+                return;
+            }
+            if(amount < 500) {
+                wdAlertBox.innerHTML = "⚠️ Minimum withdrawal amount is 500 ETB!";
+                wdAlertBox.style.display = 'block';
+                return;
+            }
+            if(!bank || !name || !accNo || !amount) {
+                wdAlertBox.innerHTML = "⚠️ Please fill in all withdrawal details!";
+                wdAlertBox.style.display = 'block';
+                return;
+            }
+            if(amount > availableTotal) {
+                wdAlertBox.innerHTML = "⚠️ Requested amount exceeds your earnings balance!";
+                wdAlertBox.style.display = 'block';
+                return;
+            }
+            
+            pendingWithdrawData = { amount, bank, fullName: name, accNo, date: new Date().toLocaleString() };
+            document.getElementById('wdConfirmBotBtn').style.display = 'block';
+            wdAlertBox.style.display = 'none';
+            
+            sendToTelegramBot(`💸 <b>New Withdrawal Request!</b>\n\n👤 Name: ${name} (${currentUser?.tgUser || ''})\n🏦 Method: ${bank}\n💰 Amount: ${amount} ETB\n🔢 Account: ${accNo}`);
+        }
+
+        function openWithdrawBotVerification() {
+            window.open("https://t.me/CLIKPAY_BOT", "_blank");
+            document.getElementById('wdConfirmBotBtn').style.display = 'none';
+            finalizeWithdrawProcess();
+        }
+
+        function finalizeWithdrawProcess() {
+            if(!pendingWithdrawData || !currentUser) return;
+            currentUser.earningsBalance -= pendingWithdrawData.amount;
+            
+            if(!currentUser.withdrawHistory) currentUser.withdrawHistory = [];
+            currentUser.withdrawHistory.unshift({
+                amount: pendingWithdrawData.amount,
+                bank: pendingWithdrawData.bank,
+                accNum: pendingWithdrawData.accNo,
+                date: pendingWithdrawData.date,
+                status: "Processing (24h)"
+            });
+            saveUserData();
+            pendingWithdrawData = null;
+            let successBox = document.getElementById('wdSuccessBox');
+            if(successBox) successBox.style.display = 'block';
+            setTimeout(() => { openDashboardByRole(); }, 3000);
+        }
+
+        function saveUserData() {
+            if(currentUser) {
+                registeredUsers[currentUser.identifier] = currentUser;
+                localStorage.setItem('clickpay_users_v15', JSON.stringify(registeredUsers));
+            }
+        }
+
+        function showInlineAlert(elementId, text) {
+            let el = document.getElementById(elementId);
+            if(el) {
+                el.innerHTML = text;
+                el.style.display = 'block';
+                setTimeout(() => { el.style.display = 'none'; }, 4000);
+            }
+        }
+
+        function switchTab(sectionId) {
+            let registeredIdentifier = localStorage.getItem('clickpay_device_reg_' + deviceId);
+            if(!registeredIdentifier && sectionId !== 'rules-section' && sectionId !== 'auth-section') {
+                sectionId = 'rules-section';
+            }
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            let targetSec = document.getElementById(sectionId);
+            if(targetSec) targetSec.classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            if(sectionId === 'business-dashboard' || sectionId === 'worker-dashboard') document.getElementById('navHome')?.classList.add('active');
+            else if(sectionId === 'wallet-section') document.getElementById('navWallet')?.classList.add('active');
+            else if(sectionId === 'recharge-section') document.getElementById('navRecharge')?.classList.add('active');
+            else if(sectionId === 'withdraw-section') document.getElementById('navWithdraw')?.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function sendToTelegramBot(text) {
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "HTML" })
+            }).catch(err => console.log(err));
+        }
+    </script>
+</body>
+</html>
